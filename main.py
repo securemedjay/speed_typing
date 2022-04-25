@@ -86,7 +86,7 @@ def generate_text():
         "text": choice(seed_text_list),
     }
     headers = {
-        "api-key": deep_ai_key
+        "Api-Key": deep_ai_key
     }
     data = requests.post(url=url, data=seed_text, headers=headers)
     result = data.json()
