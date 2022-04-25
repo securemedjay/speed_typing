@@ -1,17 +1,19 @@
 from tkinter import *
 from tkinter import messagebox
+import requests
+from random import choice
+import os
 
-text = "Google LLC an American is multinational technology company is " \
-       "that focuses on artificial intelligence,[10] search engine, " \
-       "online advertising, cloud computing, computer software, quantum computing, " \
-       "e-commerce, and consumer electronics. It has been referred to as the" \
-       " and one of the world's most valuable brands due to its market dominance, data collection, a"
+seed_text_list = ["hello", "boy"]  # DeepAI requires that you provide a seed text to generate the display text
 FONT = ("Courier", 15, "normal")
+text = ""
+deep_ai_key = os.environ.get("DEEP_AI_KEY")  # storing DeepAI key as environment variable.
+deep_ai_url = "https://api.deepai.org/api/text-generator"
 
 # Create Window
 window = Tk()
 window.title("Type Speed Counter")
-window.geometry("500x500+300+200")  # sets the size of the window and the position on the user desktop
+window.geometry("500x600+300+200")  # sets the size of the window and the position on the user desktop
 
 #  Declare variables
 user_word_list = []
@@ -64,21 +66,47 @@ def calc_wpm(event=None):
     entry.delete(0, 'end')  # delete entry text each function is called
 
 
-def stop():
+def refresh():
     """ Resets timer and wpm to zero. """
 
-    global secs, wpm
+    global secs, wpm, user_word_list
+    user_word_list = []
+    generate_text()
     secs = 0
     wpm = 0
+    display.configure(text=text)
     WPM_label.configure(text=f"WPM: {wpm}")
 
+
+def generate_text():
+    """ Generates display text using DeepAI api. """
+    global text
+    url = deep_ai_url
+    seed_text = {
+        "text": choice(seed_text_list),
+    }
+    headers = {
+        "api-key": deep_ai_key
+    }
+    data = requests.post(url=url, data=seed_text, headers=headers)
+    result = data.json()
+
+    # check for out of range exception and retry if true
+    try:
+        text = result["output"].split("\n\n")[1].strip()
+    except IndexError:
+        generate_text()
+
+
+generate_text()
 
 # WPM score label
 WPM_label = Label(text=f"WPM: {wpm}", font=("Arial", 30, "bold"), pady=30)
 WPM_label.pack()
 
 # Welcome text label
-welcome = Label(text="Start by typing the following text and get your WPM", font=("Arial", 15, "bold"))
+welcome = Label(text="Start by typing the following text and get your WPM. If you mistyped a word simply retype it",
+                font=("Arial", 15, "bold"), wraplength=350)
 welcome.pack()
 
 # Display Text label
@@ -93,7 +121,7 @@ entry.bind("<KeyPress>", timer)
 entry.bind("<space>", calc_wpm)
 
 # Stop button
-btn = Button(text="Stop", command=stop, fg="red")
+btn = Button(text="Refresh", command=refresh, fg="red")
 btn.pack()
 
 window.mainloop()
